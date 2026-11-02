@@ -32,13 +32,31 @@
 ## 二、快速开始
 
 ```bash
-# 1) 安装依赖（前后端各一次）
+# 1) 安装依赖
 npm run setup
 
 # 2) 构建前端
 npm run build
 
 # 3) 启动（默认 http://localhost:3000）
+npm start
+```
+
+### 如果是宝塔
+添加node项目，然后在自定义启动命令，先用
+```bash
+npm run setup
+```
+进行启动安装依赖
+
+然后再用
+```bash
+npm run build
+```
+构建前端
+
+最后启动即可
+```bash
 npm start
 ```
 
