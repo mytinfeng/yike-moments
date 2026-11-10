@@ -1,6 +1,6 @@
 /**
- * 开发模式：同时启动 Vite(5173) 与 Express(3000)
- * 前端通过 vite proxy 把 /api 与 /uploads 转发到 3000
+ * 开发模式：同时启动 Vite(5173) 与 Express(3300)
+ * 前端通过 vite proxy 把 /api 与 /uploads 转发到 3300
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';
