@@ -90,7 +90,12 @@
           </div>
           <div class="a-field">
             <label>头像地址</label>
-            <input v-model="form.avatar" class="a-input" placeholder="/uploads/… 或 https://…" />
+            <div style="display: flex; gap: 8px">
+              <input v-model="form.avatar" class="a-input" style="flex: 1" placeholder="/uploads/… 或 https://…" />
+              <button class="a-btn" style="height: 38px; flex-shrink: 0" @click="libOpen = true">
+                <i class="ri-folder-image-line"></i>媒体库
+              </button>
+            </div>
           </div>
           <div class="a-field">
             <label>个人简介</label>
@@ -123,6 +128,8 @@
         </div>
       </div>
     </div>
+
+    <MediaPicker v-model:open="libOpen" type="image" title="选择用户头像" @select="onLibPick" />
   </div>
 </template>
 
@@ -130,6 +137,12 @@
 import { onMounted, reactive, ref } from 'vue';
 import { api } from '../../api.js';
 import { store, toast, confirmDialog } from '../../store.js';
+import MediaPicker from '../../components/MediaPicker.vue';
+
+const libOpen = ref(false);
+function onLibPick(urls) {
+  if (urls?.length) form.avatar = urls[0];
+}
 
 const list = ref([]);
 const q = ref('');

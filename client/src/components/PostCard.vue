@@ -24,7 +24,7 @@
           {{ expanded ? '收起' : '全文' }}
         </span>
 
-        <ImageGrid v-if="images.length" :images="images" @open="onOpenImage" />
+        <ImageGrid v-if="images.length" :images="images" :blurred="!!post.nsfw" @open="onOpenImage" />
 
         <div v-if="post.video" class="post-video">
           <video :src="post.video" controls playsinline preload="metadata"></video>

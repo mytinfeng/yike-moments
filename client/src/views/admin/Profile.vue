@@ -10,6 +10,9 @@
               <img :src="form.avatar || store.settings.avatar" alt="" />
             </div>
             <div class="upload-box" @click="avatarInput?.click()"><i class="ri-image-add-line"></i>更换头像</div>
+            <div class="upload-box" @click="libOpen = true">
+              <i class="ri-folder-image-line"></i>媒体库
+            </div>
           </div>
         </div>
         <div class="a-row">
@@ -114,6 +117,13 @@
     </div>
 
     <input ref="avatarInput" type="file" accept="image/*" hidden @change="uploadAvatar" />
+
+    <MediaPicker
+      v-model:open="libOpen"
+      type="image"
+      title="选择头像"
+      @select="onLibPick"
+    />
   </div>
 </template>
 
@@ -121,11 +131,19 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { api } from '../../api.js';
 import { store, toast } from '../../store.js';
+import MediaPicker from '../../components/MediaPicker.vue';
 
 const form = reactive({ nickname: '', avatar: '', bio: '', website: '', email: '' });
 const pwd = reactive({ old: '', next: '', confirm: '' });
 const saving = ref(false);
 const avatarInput = ref(null);
+const libOpen = ref(false);
+
+function onLibPick(urls) {
+  if (!urls?.length) return;
+  form.avatar = urls[0];
+  toast('已选用媒体库图片，保存后生效');
+}
 
 const sec = reactive({
   locks: [],

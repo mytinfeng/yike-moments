@@ -410,6 +410,46 @@ textarea::placeholder {
   z-index: 1;
 }
 
+/* 封面左下角：欢迎语 / 到访人数 / 彩蛋文案，每 2 秒换一条。
+   z-index 要盖过 ::after 那层底部渐变；高度写死 14px，
+   里面的文字是绝对定位的，不撑布局也不会让封面抖一下。 */
+.cover-visits {
+  position: absolute;
+  left: 20px;
+  bottom: 14px;
+  z-index: 2;
+  height: 14px;
+  font-size: 12px;
+  line-height: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  user-select: none;
+}
+.cover-visits .cv-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: min(340px, 70vw);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* 右进左出：方向一致才像"传送带"，位移压在 18px 以内不抢视线 */
+.cv-enter-active,
+.cv-leave-active {
+  transition: opacity 0.38s ease, transform 0.38s ease;
+}
+.cv-enter-from {
+  opacity: 0;
+  transform: translateX(18px);
+}
+.cv-leave-to {
+  opacity: 0;
+  transform: translateX(-18px);
+}
+
 /* ---------- 资料区 ---------- */
 .kehua-main-head-headimg {
   width: 100%;
@@ -1072,12 +1112,22 @@ html.dark-theme .comment-row:hover {
 }
 .editor-guests input {
   flex: 1;
-  min-width: 84px;
+  /* 原来这里是 min-width: 84px，等于把昵称和网站的收缩下限锁死，
+     邮箱分不到更多宽度。改成 0 让下面的 flex 比例真正生效 */
+  min-width: 0;
   height: 32px;
   background: var(--cobg);
   border-radius: 4px;
   padding: 0 8px;
   font-size: 12px;
+}
+/* 邮箱天生比昵称长（`guestk3f9a2@你的域名` 就有 20 来个字符），
+   三个框平均分配会让它只露出前半截。给它多分一点，昵称和网站各让一点 */
+.editor-guests input:nth-child(2) {
+  flex: 1.7;
+}
+.editor-guests input:nth-child(3) {
+  flex: 0.8;
 }
 .comment-editor textarea {
   width: 100%;
@@ -1124,6 +1174,29 @@ html.dark-theme .comment-row:hover {
 }
 .editor-tools i:hover {
   color: var(--theme);
+}
+/* 「匿名」：访客一键填随机昵称和邮箱。和表情图标并排，不额外占一行高度。
+   底色用 --cobg 而不是 --backbg：评论框本身就是 --backbg，同色会糊成一片。 */
+.editor-tools .editor-anon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 9px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--texths);
+  background: var(--cobg);
+  border: 0;
+  border-radius: 11px;
+  transition: color 0.18s, background 0.18s;
+}
+.editor-tools .editor-anon:hover {
+  color: var(--theme);
+  background: var(--themetm);
+}
+.editor-tools .editor-anon i {
+  font-size: 14px;
 }
 .editor-btns {
   display: flex;
@@ -2093,6 +2166,23 @@ html.dark-theme .kehua-menu-k i {
 .write-add i.spinning {
   animation: spin 0.9s linear infinite;
 }
+/* 媒体库入口：放在图片网格下面，一行小字，不占网格位置 */
+.write-lib-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px 18px 0;
+  font-size: 12.5px;
+  color: var(--theme);
+  cursor: pointer;
+  user-select: none;
+}
+.write-lib-link i {
+  font-size: 14px;
+}
+.write-lib-link:hover {
+  opacity: 0.75;
+}
 .write-video-box {
   position: relative;
   margin: 10px 18px 0;
@@ -2388,4 +2478,74 @@ img.lazy-img.lazy-done {
   .kehua-content-right-img-pic > img.lazy-img {
     transition: none;
   }
+  /* 系统关了动效：文案直接硬切，别再横向滑 */
+  .cv-enter-active,
+  .cv-leave-active {
+    transition: none;
+  }
+}
+
+/* ---------- 图片遮罩（发布时勾「图片遮罩」，NSFW 大图先糊住） ---------- */
+/* 遮罩层要铺在整组图上，容器得有个定位上下文 */
+.kehua-content-right-img {
+  position: relative;
+}
+/* 单图模式容器宽度是父级 70%，但图片上限 260px，遮罩别铺到图片外面去。
+   这里不能用 width: fit-content：容器宽度依赖图片、图片宽度又依赖容器，
+   懒加载的图在加载前会把容器算成 0 宽，IntersectionObserver 就再也不触发 */
+.kehua-content-right-img.is-single .img-blur-cover {
+  right: auto;
+  width: min(260px, 100%);
+}
+/* 模糊会让图片边缘的像素变透明，透出底下一圈白。给 img 自己铺一层深底色接住，
+   不要设在 pic 上——单图时 pic 可能比图片宽，会在右侧露出一块纯色。
+   也别用 scale 放大补偿，放大后图片会顶出遮罩，边缘露出一条没盖住的原图 */
+.kehua-content-right-img.is-blurred .kehua-content-right-img-pic > img {
+  background: #232323;
+  filter: blur(20px);
+  cursor: default;
+}
+.img-blur-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.46);
+  color: #fff;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.img-blur-cover i {
+  font-size: 22px;
+  opacity: 0.9;
+}
+.img-blur-cover b {
+  font-size: 13px;
+  font-weight: 600;
+}
+.img-blur-cover span {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.img-blur-cover:hover {
+  background: rgba(0, 0, 0, 0.56);
+}
+/* 单图：pic 是 inline-block，实际会被撑到容器宽度（比图片宽出一截），
+   模糊后的图片边缘会从这截空隙里透出来，遮罩盖不住。把 pic 收到和图片同一个上限 */
+.kehua-content-right-img.is-single .kehua-content-right-img-pic {
+  max-width: 260px;
+}
+/* 单图遮罩：容器是 block + 内部 inline-block，行盒下方会多出一条基线空隙，
+   遮罩铺满容器就会在图片底下多压出几像素。把行高收掉，让容器高度等于图片高度 */
+.kehua-content-right-img.is-single.is-blurred {
+  line-height: 0;
 }

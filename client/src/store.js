@@ -21,6 +21,9 @@ export const store = reactive({
     footer_text: '',
     bg_music: [],
     show_music_player: '1',
+    cover_welcome: '欢迎光临{site}的朋友圈',
+    cover_visit: '{count}位朋友到访过~',
+    cover_lines: '',
   },
   ready: false,
   themeDark: false,
@@ -49,6 +52,8 @@ export const store = reactive({
   stickerMap: {},
   stickerNames: {},
   stickersLoaded: false,
+  /* 累计到访人数（按访客去重），首页封面左下角显示；0 表示还没拿到或接口失败 */
+  visitCount: 0,
 });
 
 let toastSeq = 0;
@@ -148,6 +153,27 @@ export function muteFriendSite(id) {
 /** 「恢复显示」：整条清掉 */
 export function unmuteFriendSites() {
   document.cookie = `${MUTE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+/* ---------- 访问量 ----------
+   首页挂载时上报一次，服务端按 cookie 里的 pyq_guest 去重，所以同一个人
+   反复刷新也只算一位。离线、接口挂了都静默忽略：文案不显示就是了，
+   不能因为它失败给访客弹报错。
+
+   用 promise 缓存：封面和首页都会调，两边共用一个请求，不会重复上报。 */
+let visitPromise = null;
+export function loadVisits() {
+  if (visitPromise) return visitPromise;
+  visitPromise = api
+    .post('/api/visit')
+    .then((data) => {
+      store.visitCount = Number(data?.count) || 0;
+    })
+    .catch(() => {})
+    .then(() => {
+      visitPromise = null;
+    });
+  return visitPromise;
 }
 
 /* ---------- 表情包 ---------- */

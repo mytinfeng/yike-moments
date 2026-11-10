@@ -57,7 +57,7 @@
         <span>{{ store.settings.footer_text }}</span>
       </div>
 
-      <FloatMenu :show-top="showTop" />
+      <FloatMenu :show-top="showTop" guide />
     </div>
   </div>
 </template>
@@ -65,7 +65,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { api } from '../api.js';
-import { store, toast, unmuteFriendSites } from '../store.js';
+import { store, toast, unmuteFriendSites, loadVisits } from '../store.js';
 import { useInfiniteScroll } from '../useInfiniteScroll.js';
 import TopBar from '../components/TopBar.vue';
 import Cover from '../components/Cover.vue';
@@ -208,6 +208,7 @@ function onScroll() {
 onMounted(() => {
   load(true);
   loadFriends();
+  loadVisits();
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 });

@@ -27,7 +27,12 @@
             <div class="detail-name" @click="goAuthor">{{ post.nickname }}</div>
             <div class="detail-text" v-html="renderText(post.content)"></div>
 
-            <ImageGrid v-if="post.images && post.images.length" :images="post.images" @open="openImg" />
+            <ImageGrid
+              v-if="post.images && post.images.length"
+              :images="post.images"
+              :blurred="!!post.nsfw"
+              @open="openImg"
+            />
 
             <div v-if="post.video" class="post-video" style="width: 100%">
               <video :src="post.video" controls playsinline></video>

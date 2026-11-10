@@ -60,7 +60,8 @@
             <td>
               <span v-if="p.is_pinned" class="badge green">置顶</span>
               <span v-if="p.is_ad" class="badge gray" style="margin-left: 4px">广告</span>
-              <span v-if="!p.is_pinned && !p.is_ad" class="badge">普通</span>
+              <span v-if="p.nsfw" class="badge gray" style="margin-left: 4px">遮罩</span>
+              <span v-if="!p.is_pinned && !p.is_ad && !p.nsfw" class="badge">普通</span>
             </td>
             <td><span class="cell-muted">{{ p.created_at?.slice(0, 16) }}</span></td>
             <td>

@@ -74,6 +74,16 @@
           title="表情"
           @click="togglePanel"
         ></i>
+        <button
+          v-if="!store.user"
+          type="button"
+          class="editor-anon"
+          title="随机填一个昵称和邮箱，不想留真名时用"
+          @click="anon"
+        >
+          <i class="ri-eye-off-line"></i>
+          <span>匿名</span>
+        </button>
         <span class="editor-count" :class="{ warn: overWarn }">{{ len }}/{{ MAX }}</span>
       </div>
       <div class="editor-btns">
@@ -91,6 +101,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { api } from '../api.js';
 import { store, toast, loadStickers, saveGuestProfile } from '../store.js';
 import { STICKERS_MAX, charCount } from '../utils.js';
+import { randomGuest } from '../random-guest.js';
 
 const MAX = 1000;
 
@@ -114,6 +125,21 @@ const overWarn = computed(() => len.value > MAX - 50);
 
 /* 直接引用全局访客信息：和「信息登记」弹窗共用同一份，登记过这里就自动填好 */
 const guest = store.guest;
+
+/* 匿名：一键填随机昵称 + 邮箱，和信息登记里的「随便起一个」用同一套池子。
+   点一次换一个；填完照样能手动改，提交时才写进本地存储。
+   提示只在第一次点的时候给：连点几下换名字时，输入框里的变化已经够明显了。 */
+const anonHinted = ref(false);
+
+function anon() {
+  const r = randomGuest(guest.nickname);
+  guest.nickname = r.nickname;
+  guest.email = r.email;
+  if (!anonHinted.value) {
+    anonHinted.value = true;
+    toast('已随机填好，可以直接改');
+  }
+}
 
 const emojis = [
   '😀','😄','😁','😆','😅','😂','🙂','😉','😍','🥰',

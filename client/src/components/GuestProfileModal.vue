@@ -42,6 +42,11 @@
               {{ saving ? '保存中…' : '保存' }}
             </button>
 
+            <button class="gp-random" type="button" @click="randomize">
+              <i class="ri-refresh-line"></i>
+              <span>不想留真名？随便起一个</span>
+            </button>
+
             <p class="gp-note">
               昵称会显示在你点过赞的动态下面；信息存在本机浏览器，换设备需要重新登记。
             </p>
@@ -56,10 +61,22 @@
 import { reactive, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { loadGuestProfile, saveGuestProfile, store, toast } from '../store.js';
+import { randomGuest } from '../random-guest.js';
 
 const form = reactive({ nickname: '', email: '', website: '' });
 const error = ref('');
 const saving = ref(false);
+
+/* ---------- 随机案名 ----------
+   给不愿意留真名、但又想留个称呼的访客一条捷径：一键填好昵称和邮箱，
+   不用想、不用编，点保存就能用。名字池和校验规则都在 random-guest.js，
+   评论框的「匿名」按钮用的是同一份。 */
+function randomize() {
+  const r = randomGuest(form.nickname);
+  form.nickname = r.nickname;
+  form.email = r.email;
+  error.value = '';
+}
 
 /* 每次打开都从本地读一遍，避免别处（比如评论框）刚改过这里还是旧值 */
 watch(
@@ -176,6 +193,28 @@ async function submit() {
   font-size: 12px;
   color: #f5533d;
   margin: -2px 0 10px;
+}
+.gp-random {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 0;
+  font-size: 12px;
+  color: var(--theme);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.gp-random:hover {
+  background: var(--themetm);
+}
+.gp-random i {
+  font-size: 14px;
 }
 .gp-note {
   font-size: 11px;

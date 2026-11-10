@@ -49,6 +49,15 @@
             <i :class="uploading ? 'ri-loader-4-line spinning' : 'ri-add-line'"></i>
           </div>
         </div>
+        <!-- 媒体库入口放在网格外面：网格是固定 3 列，多塞一格会掉到第二行，很难看 -->
+        <p
+          v-if="isAdmin && images.length < 9"
+          class="write-lib-link"
+          title="复用已经上传过的图片，不用重新传"
+          @click="openLib('images')"
+        >
+          <i class="ri-folder-image-line"></i>从媒体库选图片
+        </p>
 
         <div class="write-extras" style="margin-top: 8px">
           <div class="write-field">
@@ -91,9 +100,27 @@
           </div>
           <div class="write-music-row">
             <input v-model="music.url" placeholder="音频直链 https://…mp3" maxlength="300" />
+            <button
+              v-if="isAdmin"
+              class="btn-ghost"
+              style="flex-shrink: 0; padding: 0 10px"
+              title="从媒体库选音频"
+              @click="openLib('music_url')"
+            >
+              <i class="ri-folder-music-line"></i>
+            </button>
           </div>
           <div class="write-music-row">
             <input v-model="music.cover" placeholder="封面图地址（选填）" maxlength="300" />
+            <button
+              v-if="isAdmin"
+              class="btn-ghost"
+              style="flex-shrink: 0; padding: 0 10px"
+              title="从媒体库选封面图"
+              @click="openLib('music_cover')"
+            >
+              <i class="ri-folder-image-line"></i>
+            </button>
             <button class="btn-ghost" style="flex-shrink: 0" @click="pickAudio">上传音频</button>
           </div>
           <p class="write-tip" style="padding: 0">支持 mp3 / m4a 直链，或直接上传本地音频文件。</p>
@@ -125,9 +152,14 @@
           </p>
         </div>
 
-        <div v-if="isAdmin" class="write-extras" style="display: flex; gap: 16px">
-          <label class="check-line"><input v-model="isPinned" type="checkbox" /> 置顶</label>
-          <label class="check-line"><input v-model="isAd" type="checkbox" /> 标记为广告</label>
+        <div class="write-extras" style="display: flex; gap: 16px">
+          <template v-if="isAdmin">
+            <label class="check-line"><input v-model="isPinned" type="checkbox" /> 置顶</label>
+            <label class="check-line"><input v-model="isAd" type="checkbox" /> 标记为广告</label>
+          </template>
+          <label class="check-line" title="图片先糊住，读者点一下才显示内容">
+            <input v-model="isNsfw" type="checkbox" /> 图片遮罩
+          </label>
         </div>
 
         <div v-if="showEmoji" class="emoji-panel" style="margin: 8px 18px">
@@ -140,6 +172,12 @@
           <div class="left">
             <i class="ri-image-add-line" title="添加图片（也可直接粘贴）" @click="pickFiles"></i>
             <i class="ri-video-add-line" title="添加视频" @click="pickVideo" :style="video ? 'color:var(--theme)' : ''"></i>
+            <i
+              v-if="isAdmin"
+              class="ri-folder-video-line"
+              title="从媒体库选视频"
+              @click="openLib('video')"
+            ></i>
             <i class="ri-music-2-line" title="添加音乐" @click="showMusic = !showMusic"></i>
             <i
               class="ri-link"
@@ -159,6 +197,16 @@
       <input ref="videoRef" type="file" accept="video/*" hidden @change="onVideo" />
       <input ref="audioRef" type="file" accept="audio/*" hidden @change="onAudio" />
     </div>
+
+    <MediaPicker
+      v-model:open="libOpen"
+      :type="libCfg.type"
+      :title="libCfg.title"
+      :multiple="libCfg.multiple"
+      :max="libCfg.max"
+      :exclude="libCfg.exclude"
+      @select="onLibPick"
+    />
   </div>
 </template>
 
@@ -169,6 +217,7 @@ import { api } from '../api.js';
 import { store, toast } from '../store.js';
 import { compressImage } from '../utils.js';
 import LinkCard from '../components/LinkCard.vue';
+import MediaPicker from '../components/MediaPicker.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -180,6 +229,8 @@ const location = ref('');
 const adUrl = ref('');
 const isPinned = ref(false);
 const isAd = ref(false);
+/* 图片遮罩：发布后图片默认模糊，读者点一下才露出来 */
+const isNsfw = ref(false);
 const showMusic = ref(false);
 const showEmoji = ref(false);
 const submitting = ref(false);
@@ -189,6 +240,77 @@ const videoRef = ref(null);
 const audioRef = ref(null);
 const taRef = ref(null);
 const music = reactive({ title: '', artist: '', url: '', cover: '' });
+
+/* 媒体库选择：管理员的媒体库里已经有传过的图，直接复用，不用重传 */
+const libOpen = ref(false);
+const libCfg = reactive({
+  target: '',
+  type: 'image',
+  title: '选择图片',
+  multiple: false,
+  max: 0,
+  exclude: [],
+});
+
+function openLib(target) {
+  libCfg.target = target;
+  libCfg.exclude = [];
+  libCfg.multiple = false;
+  libCfg.max = 0;
+  if (target === 'images') {
+    const room = 9 - images.value.length;
+    if (room <= 0) {
+      toast('一条动态最多 9 张图片', 'error');
+      return;
+    }
+    Object.assign(libCfg, {
+      type: 'image',
+      title: '从媒体库选图片',
+      multiple: true,
+      max: room,
+      exclude: images.value,
+    });
+  } else if (target === 'video') {
+    Object.assign(libCfg, { type: 'video', title: '从媒体库选视频' });
+  } else if (target === 'music_url') {
+    Object.assign(libCfg, { type: 'audio', title: '从媒体库选音频' });
+  } else if (target === 'music_cover') {
+    Object.assign(libCfg, { type: 'image', title: '选择音乐封面' });
+  }
+  libOpen.value = true;
+}
+
+function onLibPick(urls) {
+  if (!urls?.length) return;
+  const one = urls[0];
+  switch (libCfg.target) {
+    case 'images': {
+      const room = 9 - images.value.length;
+      if (room <= 0) return;
+      const take = urls.slice(0, room);
+      images.value.push(...take);
+      toast(`已添加 ${take.length} 张`);
+      break;
+    }
+    case 'video':
+      video.value = one;
+      toast('已选用视频');
+      break;
+    case 'music_url':
+      music.url = one;
+      if (!music.title) {
+        music.title = decodeURIComponent(one.split('/').pop().replace(/\.[^.]+$/, ''));
+      }
+      toast('已选用音频');
+      break;
+    case 'music_cover':
+      music.cover = one;
+      toast('已选用封面');
+      break;
+    default:
+      break;
+  }
+}
 
 /* 网页卡片：抓回来的标题 / 简介 / 图标 */
 const showLink = ref(false);
@@ -258,6 +380,7 @@ onMounted(async () => {
       adUrl.value = p.ad_url || '';
       isPinned.value = !!p.is_pinned;
       isAd.value = !!p.is_ad;
+      isNsfw.value = !!p.nsfw;
       if (p.music) {
         Object.assign(music, p.music);
         showMusic.value = true;
@@ -462,6 +585,7 @@ async function submit() {
     link: linkCard.url ? { ...linkCard } : null,
     is_pinned: isPinned.value,
     is_ad: isAd.value,
+    nsfw: isNsfw.value,
   };
   try {
     if (editId.value) {

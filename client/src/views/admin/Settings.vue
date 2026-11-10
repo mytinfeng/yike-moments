@@ -32,6 +32,9 @@
             <div class="upload-box" @click="avatarInput?.click()">
               <i class="ri-image-add-line"></i>上传头像
             </div>
+            <div class="upload-box" @click="openLib('avatar', { title: '选择站点头像' })">
+              <i class="ri-folder-image-line"></i>媒体库
+            </div>
           </div>
         </div>
 
@@ -136,6 +139,13 @@
             <div class="upload-box" style="width: 180px; height: 110px" @click="coverInput?.click()">
               <i class="ri-image-add-line"></i>上传封面
             </div>
+            <div
+              class="upload-box"
+              style="width: 180px; height: 110px"
+              @click="openLib('cover_image', { title: '选择封面图片' })"
+            >
+              <i class="ri-folder-image-line"></i>媒体库
+            </div>
           </div>
         </div>
 
@@ -146,14 +156,29 @@
               <img :src="img" alt="" />
               <span class="del" @click="s.cover_images.splice(i, 1)"><i class="ri-close-line"></i></span>
             </div>
-            <div
-              v-if="s.cover_images.length < 5"
-              class="upload-box"
-              style="width: 140px; height: 90px"
-              @click="slideInput?.click()"
-            >
-              <i class="ri-image-add-line"></i>添加图片
-            </div>
+            <template v-if="s.cover_images.length < 5">
+              <div
+                class="upload-box"
+                style="width: 140px; height: 90px"
+                @click="slideInput?.click()"
+              >
+                <i class="ri-image-add-line"></i>添加图片
+              </div>
+              <div
+                class="upload-box"
+                style="width: 140px; height: 90px"
+                @click="
+                  openLib('cover_images', {
+                    title: '选择轮播图片',
+                    multiple: true,
+                    max: 5 - s.cover_images.length,
+                    exclude: s.cover_images,
+                  })
+                "
+              >
+                <i class="ri-folder-image-line"></i>媒体库
+              </div>
+            </template>
           </div>
         </div>
 
@@ -162,7 +187,44 @@
           <input v-model="s.cover_video" class="a-input" placeholder="https://…mp4 或上传本地视频" />
           <div class="a-actions" style="margin-top: 10px">
             <button class="a-btn" @click="videoInput?.click()"><i class="ri-upload-2-line"></i>上传视频</button>
+            <button class="a-btn" @click="openLib('cover_video', { type: 'video', title: '选择封面视频' })">
+              <i class="ri-folder-video-line"></i>从媒体库选
+            </button>
             <span class="hint" style="font-size: 12px; color: #6b7484">建议 720p 以内，自动静音循环播放</span>
+          </div>
+        </div>
+
+        <div class="sec-title" style="margin-top: 22px">封面文案</div>
+        <div class="a-field">
+          <label>欢迎语</label>
+          <input
+            v-model="s.cover_welcome"
+            class="a-input"
+            maxlength="26"
+            placeholder="欢迎光临{site}的朋友圈"
+          />
+          <div class="desc">
+            <code>{site}</code> 自动替换成站点名称。只在访客第一次打开时单独显示 2 秒，之后并入下面的随机池。
+          </div>
+        </div>
+        <div class="a-field">
+          <label>到访语</label>
+          <input v-model="s.cover_visit" class="a-input" maxlength="26" placeholder="{count}位朋友到访过~" />
+          <div class="desc">
+            <code>{count}</code> 自动替换成到访人数：1000 显示为 1k，1 万显示为 10k，100 万显示为 1M。
+          </div>
+        </div>
+        <div class="a-field">
+          <label>彩蛋文案</label>
+          <textarea
+            v-model="s.cover_lines"
+            class="a-textarea"
+            rows="6"
+            maxlength="800"
+            placeholder="一行一句，例如：来看看今天有更新吗？"
+          ></textarea>
+          <div class="desc">
+            一行一句，建议每句不超过 20 字。播完一轮会重新打乱，每 2 秒换一条；留空则只轮到访语。
           </div>
         </div>
 
@@ -209,14 +271,37 @@
               <i class="ri-delete-bin-line"></i>
             </button>
           </div>
-          <input v-model="m.url" class="a-input" style="margin-top: 8px" placeholder="音频地址 https://…mp3" />
-          <input v-model="m.cover" class="a-input" style="margin-top: 8px" placeholder="封面图地址（选填）" />
+          <div style="display: flex; gap: 8px; margin-top: 8px">
+            <input v-model="m.url" class="a-input" style="flex: 1" placeholder="音频地址 https://…mp3" />
+            <button
+              class="a-btn"
+              style="height: 38px; flex-shrink: 0"
+              title="从媒体库选音频"
+              @click="openLib('music_url', { type: 'audio', title: '选择背景音乐' }, i)"
+            >
+              <i class="ri-folder-music-line"></i>
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px">
+            <input v-model="m.cover" class="a-input" style="flex: 1" placeholder="封面图地址（选填）" />
+            <button
+              class="a-btn"
+              style="height: 38px; flex-shrink: 0"
+              title="从媒体库选封面图"
+              @click="openLib('music_cover', { title: '选择音乐封面' }, i)"
+            >
+              <i class="ri-folder-image-line"></i>
+            </button>
+          </div>
         </div>
         <div class="a-actions">
           <button class="a-btn" @click="s.bg_music.push({ title: '', artist: '', url: '', cover: '' })">
             <i class="ri-add-line"></i>添加音乐
           </button>
           <button class="a-btn" @click="audioInput?.click()"><i class="ri-upload-2-line"></i>上传音频</button>
+          <button class="a-btn" @click="openLib('audio', { type: 'audio', title: '选择背景音乐' })">
+            <i class="ri-folder-music-line"></i>从媒体库选
+          </button>
         </div>
         <p class="desc" style="margin-top: 8px">上传的音频会自动追加到列表第一项（需填写歌名）。</p>
 
@@ -389,13 +474,83 @@
     <input ref="slideInput" type="file" accept="image/*" multiple hidden @change="uploadSlides" />
     <input ref="videoInput" type="file" accept="video/*" hidden @change="(e) => uploadTo(e, 'cover_video')" />
     <input ref="audioInput" type="file" accept="audio/*" hidden @change="uploadAudio" />
+
+    <MediaPicker
+      v-model:open="libOpen"
+      :type="libCfg.type"
+      :title="libCfg.title"
+      :multiple="libCfg.multiple"
+      :max="libCfg.max"
+      :exclude="libCfg.exclude"
+      @select="onLibPick"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { api } from '../../api.js';
 import { applyFavicon, store, toast } from '../../store.js';
+import MediaPicker from '../../components/MediaPicker.vue';
+
+/* 媒体库选择弹窗：target 决定选完往哪个字段塞 */
+const libOpen = ref(false);
+const libCfg = reactive({
+  target: '',
+  index: -1,
+  type: 'image',
+  title: '选择图片',
+  multiple: false,
+  max: 0,
+  exclude: [],
+});
+
+function openLib(target, opts = {}, index = -1) {
+  libCfg.target = target;
+  libCfg.index = index;
+  libCfg.type = opts.type || 'image';
+  libCfg.title = opts.title || '选择图片';
+  libCfg.multiple = !!opts.multiple;
+  libCfg.max = opts.max || 0;
+  libCfg.exclude = opts.exclude || [];
+  libOpen.value = true;
+}
+
+function onLibPick(urls) {
+  if (!urls?.length || !s.value) return;
+  const one = urls[0];
+  switch (libCfg.target) {
+    case 'avatar':
+      s.value.avatar = one;
+      break;
+    case 'cover_image':
+      s.value.cover_image = one;
+      break;
+    case 'cover_video':
+      s.value.cover_video = one;
+      break;
+    case 'cover_images':
+      s.value.cover_images.push(...urls.slice(0, Math.max(0, 5 - s.value.cover_images.length)));
+      break;
+    case 'audio':
+      s.value.bg_music.push({
+        title: decodeURIComponent(one.split('/').pop().replace(/\.[^.]+$/, '')),
+        artist: '',
+        url: one,
+        cover: '',
+      });
+      break;
+    case 'music_url':
+      if (s.value.bg_music[libCfg.index]) s.value.bg_music[libCfg.index].url = one;
+      break;
+    case 'music_cover':
+      if (s.value.bg_music[libCfg.index]) s.value.bg_music[libCfg.index].cover = one;
+      break;
+    default:
+      break;
+  }
+  toast('已选用，记得点「保存设置」');
+}
 
 const s = ref(null);
 /* 预览里显示的域名，纯粹为了让"搜索结果长什么样"更直观 */
@@ -525,6 +680,9 @@ async function save() {
       cover_image: s.value.cover_image,
       cover_video: s.value.cover_video,
       cover_images: s.value.cover_images,
+      cover_welcome: s.value.cover_welcome,
+      cover_visit: s.value.cover_visit,
+      cover_lines: s.value.cover_lines,
       theme_color: s.value.theme_color,
       page_size: String(s.value.page_size),
       night_auto: s.value.night_auto,

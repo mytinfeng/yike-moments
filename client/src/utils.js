@@ -86,6 +86,21 @@ export function monthLabel(month) {
   return `${y}年${Number(m)}月`;
 }
 
+/**
+ * 数字缩写（访问量用）：1000 → 1k，1万 → 10k，100万 → 1M。
+ * 保留一位小数、整数不留 .0；999999 这种四舍五入后会变成 1000k 的，直接进位到 1M。
+ */
+export function shortCount(value) {
+  const n = Math.max(0, Math.floor(Number(value) || 0));
+  if (n < 1000) return String(n);
+  const one = (x) => {
+    const s = x.toFixed(1);
+    return s.endsWith('.0') ? s.slice(0, -2) : s;
+  };
+  const k = n / 1000;
+  return k < 999.95 ? `${one(k)}k` : `${one(n / 1e6)}M`;
+}
+
 export function debounce(fn, wait = 300) {
   let timer = null;
   return (...args) => {
