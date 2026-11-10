@@ -85,6 +85,7 @@ router.get('/posts', (req, res) => {
       music: parseJSON(r.music, null),
       is_pinned: !!r.is_pinned,
       is_ad: !!r.is_ad,
+      nsfw: !!r.nsfw,
     })),
     total,
     page,

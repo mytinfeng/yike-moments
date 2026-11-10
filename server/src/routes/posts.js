@@ -72,6 +72,7 @@ function shapePost(row) {
     link: parseJSON(row.link, null),
     is_pinned: !!row.is_pinned,
     is_ad: !!row.is_ad,
+    nsfw: !!row.nsfw,
     like_count: Number(row.like_count || 0),
     comment_count: Number(row.comment_count || 0),
   };
@@ -246,10 +247,12 @@ router.post('/', requireAuth, (req, res) => {
   const isAdmin = req.user.role === 'admin';
   const is_pinned = isAdmin ? (req.body.is_pinned ? 1 : 0) : 0;
   const is_ad = isAdmin ? (req.body.is_ad ? 1 : 0) : 0;
+  /* 图片遮罩不跟管理员绑：发布者最清楚自己的图要不要先挡一下 */
+  const nsfw = req.body.nsfw ? 1 : 0;
   const info = db
     .prepare(
-      `INSERT INTO posts(user_id, content, images, video, music, link, location, ad_url, is_pinned, is_ad, status, created_at)
-       VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`
+      `INSERT INTO posts(user_id, content, images, video, music, link, location, ad_url, is_pinned, is_ad, nsfw, status, created_at)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`
     )
     .run(
       req.user.id,
@@ -262,6 +265,7 @@ router.post('/', requireAuth, (req, res) => {
       ad_url || '',
       is_pinned,
       is_ad,
+      nsfw,
       'published',
       now()
     );
@@ -289,11 +293,12 @@ router.put('/:id', requireAuth, (req, res) => {
     ad_url: body.ad_url !== undefined ? body.ad_url : post.ad_url,
     is_pinned: isAdmin && body.is_pinned !== undefined ? (body.is_pinned ? 1 : 0) : post.is_pinned,
     is_ad: isAdmin && body.is_ad !== undefined ? (body.is_ad ? 1 : 0) : post.is_ad,
+    nsfw: body.nsfw !== undefined ? (body.nsfw ? 1 : 0) : post.nsfw,
     status: isAdmin && body.status ? body.status : post.status,
   };
   db.prepare(
     `UPDATE posts SET content=?, images=?, video=?, music=?, link=?, location=?, ad_url=?,
-     is_pinned=?, is_ad=?, status=?, updated_at=? WHERE id=?`
+     is_pinned=?, is_ad=?, nsfw=?, status=?, updated_at=? WHERE id=?`
   ).run(
     next.content,
     next.images,
@@ -304,6 +309,7 @@ router.put('/:id', requireAuth, (req, res) => {
     next.ad_url,
     next.is_pinned,
     next.is_ad,
+    next.nsfw,
     next.status,
     now(),
     post.id

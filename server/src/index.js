@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { attachUser, ensureGuest } from './auth.js';
-import { ROOT, UPLOAD_DIR, db } from './db.js';
+import { ROOT, UPLOAD_DIR, DB_FILE, db } from './db.js';
 import { seedIfEmpty } from './seed.js';
 import { startAiScheduler } from './ai-review.js';
 import { renderIndexHtml } from './seo.js';
@@ -21,7 +21,7 @@ import { publicRouter as federationPublic, adminRouter as federationAdmin } from
 import { startFederation } from './federation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 3300);
 
 seedIfEmpty();
 
@@ -58,6 +58,16 @@ app.use('/api', (req, res) => res.status(404).json({ error: '接口不存在' })
 /* 前端静态资源：首页 HTML 在返回前注入后台配置的 TDK */
 const dist = path.resolve(ROOT, '..', 'client', 'dist');
 if (fs.existsSync(dist)) {
+  /* Service Worker 必须不缓存：改了 sw.js 要立刻生效，
+     否则用户会卡在旧版本的缓存策略上一整天 */
+  const swFile = path.join(dist, 'sw.js');
+  if (fs.existsSync(swFile)) {
+    app.get('/sw.js', (req, res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Service-Worker-Allowed', '/');
+      res.type('application/javascript; charset=utf-8').sendFile(swFile);
+    });
+  }
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
   app.get('*', (req, res, next) => {
     if (req.method !== 'GET') return next();
@@ -100,5 +110,5 @@ app.listen(PORT, () => {
   console.log(`\n  朋友圈复刻版已启动`);
   console.log(`  前台  http://localhost:${PORT}/`);
   console.log(`  后台  http://localhost:${PORT}/admin`);
-  console.log(`  数据  ${path.join(ROOT, 'data', 'pyq.db')}  动态 ${count} 条\n`);
+  console.log(`  数据  ${DB_FILE}  动态 ${count} 条\n`);
 });

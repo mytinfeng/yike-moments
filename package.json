@@ -1,6 +1,6 @@
 {
   "name": "pengyouquan",
-  "version": "1.0.10",
+  "version": "1.0.17",
   "private": true,
   "description": "壹刻 · Node + SQLite + Vue 3 朋友圈站点",
   "type": "module",

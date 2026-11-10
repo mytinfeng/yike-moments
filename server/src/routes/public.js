@@ -1,5 +1,5 @@
 import express from 'express';
-import { db, getSettings, parseJSON } from '../db.js';
+import { db, getSettings, parseJSON, now } from '../db.js';
 import { locate, clientIp } from '../geo.js';
 import { checkNickname } from '../guard.js';
 import { hitLimit, parseCookies } from '../auth.js';
@@ -42,7 +42,26 @@ router.get('/settings', (req, res) => {
     footer_text: s.footer_text,
     bg_music: parseJSON(s.bg_music, []),
     show_music_player: s.show_music_player,
+    /* 封面左下角轮播文案：原样下发，{site} / {count} 由前端替换 */
+    cover_welcome: s.cover_welcome || '',
+    cover_visit: s.cover_visit || '',
+    cover_lines: s.cover_lines || '',
   });
+});
+
+/* 访问量上报：首页挂载时调一次，返回累计到访人数。
+   按 pyq_guest 去重 —— 同一个人反复刷新也只算一位；
+   老访客只读一次库，不产生任何写入。 */
+router.post('/visit', (req, res) => {
+  const gid = String(req.guestId || '');
+  if (/^[a-f0-9]{32}$/.test(gid)) {
+    const seen = db.prepare('SELECT 1 FROM visits WHERE guest_id = ?').get(gid);
+    if (!seen) {
+      db.prepare('INSERT OR IGNORE INTO visits(guest_id, first_at) VALUES(?, ?)').run(gid, now());
+    }
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ count: db.prepare('SELECT COUNT(*) n FROM visits').get().n });
 });
 
 /* 信息登记：把昵称回写到这位访客已经点过的赞上。

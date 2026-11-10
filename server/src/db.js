@@ -14,9 +14,11 @@ export const UPLOAD_DIR = process.env.PYQ_UPLOADS
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-export const db = new DatabaseSync(
-  process.env.PYQ_DB ? path.resolve(process.env.PYQ_DB) : path.join(DATA_DIR, 'pyq.db')
-);
+export const DB_FILE = process.env.PYQ_DB
+  ? path.resolve(process.env.PYQ_DB)
+  : path.join(DATA_DIR, 'pyq.db');
+
+export const db = new DatabaseSync(DB_FILE);
 
 db.exec(`
 PRAGMA journal_mode = WAL;
@@ -117,6 +119,14 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT
 );
 
+/* 访问量：一位访客一行，主键就是 pyq_guest 那个 cookie 里的 32 位 hex。
+   只记首次访问时间 —— 老访客再刷多少次都不会产生写入。
+   显示的就是这张表的行数（去过重的人数），不是 PV。 */
+CREATE TABLE IF NOT EXISTS visits (
+  guest_id TEXT PRIMARY KEY,
+  first_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_posts_user ON posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_posts_time ON posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id);
@@ -138,6 +148,10 @@ if (!likeCols.includes('nickname')) {
 const postCols = db.prepare('PRAGMA table_info(posts)').all().map((c) => c.name);
 if (!postCols.includes('link')) {
   db.exec("ALTER TABLE posts ADD COLUMN link TEXT DEFAULT ''");
+}
+/* 兼容旧库：图片遮罩（发布 NSFW 大图时默认模糊，点一下才显示） */
+if (!postCols.includes('nsfw')) {
+  db.exec('ALTER TABLE posts ADD COLUMN nsfw INTEGER NOT NULL DEFAULT 0');
 }
 
 /* 兼容旧库：给 comments 补 AI 审核字段（老库升级不丢数据） */
@@ -282,6 +296,20 @@ export const DEFAULT_SETTINGS = {
   footer_text: '©️ 壹刻 · Node + SQLite + Vue',
   bg_music: '[]',
   show_music_player: '1',
+
+  /* ---- 封面左下角那行会动的字 ----
+     支持 {site} / {count} 两个占位符。cover_lines 一行一句，播完一轮再洗牌重来。
+     欢迎语只在访客第一次打开时单独播 2 秒，之后并入随机池一起轮播。 */
+  cover_welcome: '欢迎光临{site}的朋友圈',
+  cover_visit: '{count}位朋友到访过~',
+  cover_lines: [
+    '来看看今天有更新吗？',
+    '又来视奸我啦？',
+    '别以为我不在，其实我一直在',
+    '今天也没有更新，明天再来吧',
+    '路过一下，顺便看看你',
+    '这里的风很温柔',
+  ].join('\n'),
 
   /* ---- AI 评论审核（OpenAI 兼容接口）---- */
   ai_enabled: '0',
