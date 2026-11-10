@@ -49,7 +49,7 @@ npm run setup
 # 2) 构建前端
 npm run build
 
-# 3) 启动（默认 http://localhost:3000）
+# 3) 启动（默认 http://localhost:3300）
 npm start
 ```
 
