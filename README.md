@@ -18,7 +18,7 @@
 懒得上传了，在右侧发行那里下载最新的吧！~
 
 
-2026/11/10 最新版安装：[最新安装包]([https://echo.cm](https://github.com/mytinfeng/yike-moments/releases/tag/v1.0.19))
+2026/11/10 最新版安装：[最新安装包](https://github.com/mytinfeng/yike-moments/releases/tag/v1.0.19)
 
 ------------
 -----------
