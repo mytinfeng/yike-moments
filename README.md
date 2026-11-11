@@ -24,6 +24,9 @@
 -----------
 
 
+## Typecho版本来了
+[朋友圈-Typecho版本](https://github.com/mytinfeng/yike-moments-typecho)
+
 
 
 ## 一、技术栈
