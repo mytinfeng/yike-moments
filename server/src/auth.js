@@ -81,11 +81,17 @@ export function requireAdmin(req, res, next) {
 
 export function setTokenCookie(res, token) {
   const maxAge = TOKEN_DAYS * 86400;
-  appendCookie(res, `pyq_token=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax`);
+  appendCookie(res, `pyq_token=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secureFlag(res)}`);
 }
 
 export function clearTokenCookie(res) {
-  appendCookie(res, 'pyq_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax');
+  appendCookie(res, `pyq_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secureFlag(res)}`);
+}
+
+/* HTTPS 访问时给 Cookie 加 Secure，防止明文链路把登录态漏出去。
+   本机 http://localhost 调试时不加，避免登录不上。 */
+function secureFlag(res) {
+  return res.req && res.req.secure ? '; Secure' : '';
 }
 
 /* ---------------- 游客标识（匿名点赞用） ---------------- */
@@ -104,7 +110,7 @@ export function ensureGuest(req, res, next) {
   let gid = cookies[GUEST_COOKIE] || '';
   if (!/^[a-f0-9]{32}$/.test(gid)) {
     gid = crypto.randomBytes(16).toString('hex');
-    appendCookie(res, `${GUEST_COOKIE}=${gid}; Path=/; Max-Age=${GUEST_DAYS * 86400}; HttpOnly; SameSite=Lax`);
+    appendCookie(res, `${GUEST_COOKIE}=${gid}; Path=/; Max-Age=${GUEST_DAYS * 86400}; HttpOnly; SameSite=Lax${secureFlag(res)}`);
   }
   req.guestId = gid;
   next();

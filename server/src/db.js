@@ -293,6 +293,14 @@ export const DEFAULT_SETTINGS = {
   night_auto: '1',
   allow_register: '1',
   comment_audit: '0',
+
+  /* ---- 图片上传压缩 ----
+     image_compress=1 时，JPG/PNG/WebP/AVIF 上传后自动纠正方向、缩到最长边以内并转 WebP；
+     GIF / SVG / 动图保持原样。image_max_side 限制最长边（1280–3840），image_quality 为 WebP 质量（60–95）。 */
+  image_compress: '1',
+  image_max_side: '2560',
+  image_quality: '82',
+
   footer_text: '©️ 壹刻 · Node + SQLite + Vue',
   bg_music: '[]',
   show_music_player: '1',

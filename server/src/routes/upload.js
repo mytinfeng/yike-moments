@@ -3,8 +3,9 @@ import multer from 'multer';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { UPLOAD_DIR } from '../db.js';
+import { UPLOAD_DIR, getSettings } from '../db.js';
 import { requireAuth } from '../auth.js';
+import { compressImage } from '../image-compress.js';
 
 const router = express.Router();
 
@@ -50,11 +51,25 @@ function toUrl(file) {
 }
 
 router.post('/', requireAuth, (req, res) => {
-  upload.array('file', 9)(req, res, (err) => {
+  upload.array('file', 9)(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message || '上传失败' });
-    const files = req.files || [];
-    if (!files.length) return res.status(400).json({ error: '没有收到文件' });
-    res.json({ files: files.map((f) => ({ url: toUrl(f), name: f.originalname, size: f.size })) });
+    const list = req.files || [];
+    if (!list.length) return res.status(400).json({ error: '没有收到文件' });
+
+    const settings = getSettings();
+    const files = [];
+    /* 逐张压，避免 9 张大图同时进 sharp 把内存顶爆 */
+    for (const f of list) {
+      const out = await compressImage(f, settings);
+      files.push({
+        url: toUrl(f),
+        name: f.originalname,
+        size: f.size,
+        compressed: !!out,
+        originalSize: out ? out.originalSize : f.size,
+      });
+    }
+    res.json({ files });
   });
 });
 

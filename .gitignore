@@ -1,0 +1,12 @@
+# 依赖
+node_modules/
+
+# 运行时数据（数据库、上传的用户文件）
+server/data/
+server/uploads/*
+!server/uploads/seed/
+!server/uploads/seed/**
+
+# 杂项
+.DS_Store
+*.log

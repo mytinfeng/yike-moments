@@ -70,7 +70,7 @@ if (fs.existsSync(dist)) {
   }
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
   app.get('*', (req, res, next) => {
-    if (req.method !== 'GET') return next();
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
     /* 带扩展名的路径是静态资源，没命中就老老实实 404，
        别把 /foo.png 也回成一整页 HTML（软 404 对搜索不友好） */
     if (path.extname(req.path)) return next();

@@ -262,6 +262,45 @@
           </div>
         </div>
 
+        <div class="sec-title" style="margin-top: 22px">图片上传</div>
+        <div class="a-row">
+          <div class="a-field">
+            <label>自动压缩图片</label>
+            <select v-model="s.image_compress" class="a-select">
+              <option value="1">开启（推荐）</option>
+              <option value="0">关闭，保留原图</option>
+            </select>
+            <div class="desc">
+              JPG / PNG / WebP / AVIF 上传后自动纠正方向、缩小并转成 WebP；GIF、SVG、动图保持原样。
+            </div>
+          </div>
+          <div class="a-field">
+            <label>最长边 / 质量</label>
+            <div style="display: flex; gap: 8px">
+              <input
+                v-model.number="s.image_max_side"
+                class="a-input"
+                type="number"
+                min="1280"
+                max="3840"
+                step="128"
+                :disabled="s.image_compress !== '1'"
+              />
+              <input
+                v-model.number="s.image_quality"
+                class="a-input"
+                type="number"
+                min="60"
+                max="95"
+                :disabled="s.image_compress !== '1'"
+              />
+            </div>
+            <div class="desc">
+              左边是最长边像素（1280–3840），右边是 WebP 质量（60–95）。默认 2560 / 82，兼顾清晰度和体积。
+            </div>
+          </div>
+        </div>
+
         <div class="sec-title" style="margin-top: 22px">背景音乐</div>
         <div v-for="(m, i) in s.bg_music" :key="i" class="a-field" style="background: #fafbfc; border: 1px solid #eef0f4; border-radius: 10px; padding: 12px">
           <div class="a-row">
@@ -688,6 +727,11 @@ async function save() {
       night_auto: s.value.night_auto,
       allow_register: s.value.allow_register,
       comment_audit: s.value.comment_audit,
+      image_compress: s.value.image_compress,
+      image_max_side: String(
+        Math.min(3840, Math.max(1280, Number(s.value.image_max_side) || 2560))
+      ),
+      image_quality: String(Math.min(95, Math.max(60, Number(s.value.image_quality) || 82))),
       footer_text: s.value.footer_text,
       bg_music: s.value.bg_music,
       show_music_player: s.value.show_music_player,
